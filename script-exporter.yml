@@ -1,0 +1,10 @@
+scripts:
+  - name: 'success'
+    script: sleep 5
+
+  - name: 'failure'
+    script: sleep 2 && exit 1
+
+  - name: 'timeout'
+    script: sleep 5
+    timeout: 1

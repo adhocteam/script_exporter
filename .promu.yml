@@ -1,0 +1,31 @@
+go:
+    cgo: true
+repository:
+    path: github.com/adhocteam/script_exporter
+build:
+    flags: -a -tags 'netgo static_build'
+    ldflags: |
+        -linkmode external -extldflags -static
+        -X {{repoPath}}/vendor/github.com/prometheus/common/version.Version={{.Version}}
+        -X {{repoPath}}/vendor/github.com/prometheus/common/version.Revision={{.Revision}}
+        -X {{repoPath}}/vendor/github.com/prometheus/common/version.Branch={{.Branch}}
+        -X {{repoPath}}/vendor/github.com/prometheus/common/version.BuildUser={{user}}@{{host}}
+        -X {{repoPath}}/vendor/github.com/prometheus/common/version.BuildDate={{date "20060102-15:04:05"}}
+tarball:
+    files:
+        - LICENSE
+crossbuild:
+    platforms:
+        - linux/amd64
+#       - linux/386
+#       - darwin/amd64
+#       - darwin/386
+#       - windows/amd64
+#       - windows/386
+#       - netbsd/amd64
+#       - netbsd/386
+#       - linux/arm
+#       - linux/arm64
+#       - netbsd/arm
+#        - linux/ppc64
+#        - linux/ppc64le
