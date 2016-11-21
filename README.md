@@ -6,6 +6,8 @@ Prometheus exporter written to execute and collect metrics on script exit status
 and duration. Designed to allow the execution of probes where support for the
 probe type wasn't easily configured with the Prometheus blackbox exporter.
 
+Minimum supported Go Version: 1.7.3
+
 ## Sample Configuration
 
 ```yaml
