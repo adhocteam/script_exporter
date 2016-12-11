@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"gopkg.in/yaml.v2"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -22,16 +24,6 @@ var (
 	listenAddress = flag.String("web.listen-address", ":9172", "The address to listen on for HTTP requests.")
 	metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
 	shell         = flag.String("config.shell", "/bin/sh", "Shell to execute script")
-
-	histogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "script_duration_seconds",
-		Help: "Duration for configured scripts with zero exit status",
-	}, []string{"script"})
-
-	failureHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "script_failure_duration_seconds",
-		Help: "Duration for configured scripts with non-zero exit status",
-	}, []string{"script"})
 )
 
 type Config struct {
@@ -42,6 +34,12 @@ type Script struct {
 	Name    string `yaml:"name"`
 	Content string `yaml:"script"`
 	Timeout int64  `yaml:"timeout"`
+}
+
+type Measurement struct {
+	Script   *Script
+	Success  int
+	Duration float64
 }
 
 func runScript(script *Script) error {
@@ -69,37 +67,87 @@ func runScript(script *Script) error {
 	return bashCmd.Wait()
 }
 
-func runScripts(config *Config) {
-	ch := make(chan bool)
+func runScripts(scripts []*Script) []*Measurement {
+	measurements := make([]*Measurement, 0)
 
-	for _, script := range config.Scripts {
+	ch := make(chan *Measurement)
+
+	for _, script := range scripts {
 		go func(script *Script) {
 			start := time.Now()
+			success := 0
 			err := runScript(script)
 			duration := time.Since(start).Seconds()
 
 			if err == nil {
 				log.Debugf("OK: %s (after %fs).", script.Name, duration)
+				success = 1
 			} else {
 				log.Errorf("ERROR: %s: %s (failed after %fs).", script.Name, err, duration)
-				failureHistogram.WithLabelValues(script.Name).Observe(duration)
 			}
 
-			histogram.WithLabelValues(script.Name).Observe(duration)
-
-			ch <- true
+			ch <- &Measurement{
+				Script:   script,
+				Duration: duration,
+				Success:  success,
+			}
 		}(script)
 	}
 
-	for i := 0; i < len(config.Scripts); i++ {
-		<-ch
+	for i := 0; i < len(scripts); i++ {
+		measurements = append(measurements, <-ch)
+	}
+
+	return measurements
+}
+
+func scriptFilter(scripts []*Script, name, pattern string) (filteredScripts []*Script, err error) {
+	if name == "" && pattern == "" {
+		err = errors.New("`name` or `pattern` required")
+		return
+	}
+
+	var patternRegexp *regexp.Regexp
+
+	if pattern != "" {
+		patternRegexp, err = regexp.Compile(pattern)
+
+		if err != nil {
+			return
+		}
+	}
+
+	for _, script := range scripts {
+		if script.Name == name || (pattern != "" && patternRegexp.MatchString(script.Name)) {
+			filteredScripts = append(filteredScripts, script)
+		}
+	}
+
+	return
+}
+
+func scriptRunHandler(w http.ResponseWriter, r *http.Request, config *Config) {
+	params := r.URL.Query()
+	name := params.Get("name")
+	pattern := params.Get("pattern")
+
+	scripts, err := scriptFilter(config.Scripts, name, pattern)
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	measurements := runScripts(scripts)
+
+	for _, measurement := range measurements {
+		fmt.Fprintf(w, "script_duration_seconds{script=\"%s\"} %f\n", measurement.Script.Name, measurement.Duration)
+		fmt.Fprintf(w, "script_success{script=\"%s\"} %d\n", measurement.Script.Name, measurement.Success)
 	}
 }
 
 func init() {
 	prometheus.MustRegister(version.NewCollector("script_exporter"))
-	prometheus.MustRegister(histogram)
-	prometheus.MustRegister(failureHistogram)
 }
 
 func main() {
@@ -134,11 +182,10 @@ func main() {
 		}
 	}
 
-	promHandler := prometheus.Handler()
+	http.Handle("/metrics", prometheus.Handler())
 
-	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		runScripts(&config)
-		promHandler.ServeHTTP(w, r)
+	http.HandleFunc("/probe", func(w http.ResponseWriter, r *http.Request) {
+		scriptRunHandler(w, r, &config)
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
