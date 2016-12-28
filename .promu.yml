@@ -1,4 +1,5 @@
 go:
+    version: 1.7.4
     cgo: true
 repository:
     path: github.com/adhocteam/script_exporter
