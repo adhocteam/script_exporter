@@ -83,7 +83,7 @@ func runScripts(scripts []*Script) []*Measurement {
 				log.Debugf("OK: %s (after %fs).", script.Name, duration)
 				success = 1
 			} else {
-				log.Errorf("ERROR: %s: %s (failed after %fs).", script.Name, err, duration)
+				log.Infof("ERROR: %s: %s (failed after %fs).", script.Name, err, duration)
 			}
 
 			ch <- &Measurement{
