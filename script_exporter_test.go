@@ -6,9 +6,9 @@ import (
 
 var config = &Config{
 	Scripts: []*Script{
-		{"success", "exit 0", 1},
-		{"failure", "exit 1", 1},
-		{"timeout", "sleep 5", 2},
+		{"success", "exit 0", "", 1},
+		{"failure", "exit 1", "", 1},
+		{"timeout", "sleep 5", "", 2},
 	},
 }
 
@@ -39,7 +39,7 @@ func TestRunScripts(t *testing.T) {
 
 func TestScriptFilter(t *testing.T) {
 	t.Run("RequiredParameters", func(t *testing.T) {
-		_, err := scriptFilter(config.Scripts, "", "")
+		_, err := scriptFilter(config.Scripts, "", "", "")
 
 		if err.Error() != "`name` or `pattern` required" {
 			t.Errorf("Expected failure when supplying no parameters")
@@ -47,7 +47,7 @@ func TestScriptFilter(t *testing.T) {
 	})
 
 	t.Run("NameMatch", func(t *testing.T) {
-		scripts, err := scriptFilter(config.Scripts, "success", "")
+		scripts, err := scriptFilter(config.Scripts, "success", "", "")
 
 		if err != nil {
 			t.Errorf("Unexpected: %s", err.Error())
@@ -59,7 +59,7 @@ func TestScriptFilter(t *testing.T) {
 	})
 
 	t.Run("PatternMatch", func(t *testing.T) {
-		scripts, err := scriptFilter(config.Scripts, "", "fail.*")
+		scripts, err := scriptFilter(config.Scripts, "", "fail.*", "")
 
 		if err != nil {
 			t.Errorf("Unexpected: %s", err.Error())
@@ -70,8 +70,26 @@ func TestScriptFilter(t *testing.T) {
 		}
 	})
 
+	t.Run("TargetSet", func(t *testing.T) {
+		scripts, err := scriptFilter(config.Scripts, "", ".*", "example.com")
+
+		if err != nil {
+			t.Errorf("Unexpected: %s", err.Error())
+		}
+
+		if len(scripts) != 3 {
+			t.Fatalf("Expected 3 scripts, received %d", len(scripts))
+		}
+
+		for i, script := range config.Scripts {
+			if script.Target != "example.com" {
+				t.Fatalf("Target not set on script %s", scripts[i].Name)
+			}
+		}
+	})
+
 	t.Run("AllMatch", func(t *testing.T) {
-		scripts, err := scriptFilter(config.Scripts, "success", ".*")
+		scripts, err := scriptFilter(config.Scripts, "success", ".*", "")
 
 		if err != nil {
 			t.Errorf("Unexpected: %s", err.Error())

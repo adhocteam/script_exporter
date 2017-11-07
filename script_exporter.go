@@ -33,6 +33,7 @@ type Config struct {
 type Script struct {
 	Name    string `yaml:"name"`
 	Content string `yaml:"script"`
+	Target  string `yaml:"target"`
 	Timeout int64  `yaml:"timeout"`
 }
 
@@ -47,6 +48,7 @@ func runScript(script *Script) error {
 	defer cancel()
 
 	bashCmd := exec.CommandContext(ctx, *shell)
+	bashCmd.Env = append(os.Environ(), fmt.Sprintf("TARGET=%s", script.Target))
 
 	bashIn, err := bashCmd.StdinPipe()
 
@@ -101,7 +103,7 @@ func runScripts(scripts []*Script) []*Measurement {
 	return measurements
 }
 
-func scriptFilter(scripts []*Script, name, pattern string) (filteredScripts []*Script, err error) {
+func scriptFilter(scripts []*Script, name, pattern, target string) (filteredScripts []*Script, err error) {
 	if name == "" && pattern == "" {
 		err = errors.New("`name` or `pattern` required")
 		return
@@ -118,6 +120,7 @@ func scriptFilter(scripts []*Script, name, pattern string) (filteredScripts []*S
 	}
 
 	for _, script := range scripts {
+		script.Target = target
 		if script.Name == name || (pattern != "" && patternRegexp.MatchString(script.Name)) {
 			filteredScripts = append(filteredScripts, script)
 		}
@@ -130,8 +133,9 @@ func scriptRunHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 	params := r.URL.Query()
 	name := params.Get("name")
 	pattern := params.Get("pattern")
+	target := params.Get("target")
 
-	scripts, err := scriptFilter(config.Scripts, name, pattern)
+	scripts, err := scriptFilter(config.Scripts, name, pattern, target)
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)

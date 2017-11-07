@@ -21,6 +21,11 @@ scripts:
   - name: timeout
     script: sleep 5
     timeout: 1
+
+  - name: target
+    script: example.sh
+    timeout: 4
+    target: service.example.com
 ```
 
 ## Running
@@ -56,7 +61,7 @@ script_duration_seconds{script="failure"} 2.008337
 script_success{script="failure"} 0
 ```
 
-A regular expression may be specified withthe `pattern` paremeter:
+A regular expression may be specified with the `pattern` paremeter:
 
 `$ curl http://localhost:9172/probe?pattern=.*`
 
@@ -68,6 +73,14 @@ script_success{script="failure"} 0
 script_duration_seconds{script="success"} 5.013670
 script_success{script="success"} 1
 ```
+
+A `target` can be specified for each script in the configuration file, or, more
+usefully, passed as a parameter which is made available to the script(s) that
+gets run as an environment variable named `$TARGET`. This allows you to leverage
+Prometheus targets, if you happen to need the script to operate on an arbitrary
+number of remote hosts/services.
+
+`$ curl http://localhost:9172/probe?name=example.sh&target=service.example.com`
 
 ## Design
 
