@@ -6,9 +6,9 @@ import (
 
 var config = &Config{
 	Scripts: []*Script{
-		{"success", "exit 0", "", 1},
-		{"failure", "exit 1", "", 1},
-		{"timeout", "sleep 5", "", 2},
+		{"success", "exit 0", 1, ""},
+		{"failure", "exit 1", 1, ""},
+		{"timeout", "sleep 5", 2, ""},
 	},
 }
 
@@ -85,6 +85,18 @@ func TestScriptFilter(t *testing.T) {
 			if script.Target != "example.com" {
 				t.Fatalf("Target not set on script %s", scripts[i].Name)
 			}
+		}
+	})
+
+	t.Run("TargetInvalid", func(t *testing.T) {
+		scripts, err := scriptFilter(config.Scripts, "success", "", "example.com;rm -rf /")
+
+		if err != nil {
+			t.Errorf("Unexpected: %s", err.Error())
+		}
+
+		if len(scripts) != 0 {
+			t.Fatalf("Expected 0 scripts, received %d", len(scripts))
 		}
 	})
 
