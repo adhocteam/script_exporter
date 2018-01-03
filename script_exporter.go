@@ -110,11 +110,11 @@ func scriptFilter(scripts []*Script, name, pattern, target string) (filteredScri
 	}
 
 	var patternRegexp *regexp.Regexp
-	var targetRegexp *regexp.Regexp
 
-	// A *very* basic regex pattern to be sure that the target looks minimally
-	// like a domain name and contains no special shell characters.
-	var targetPattern string = "^[a-zA-Z0-9-.]{2,253}$"
+	// A regex pattern that only matches valid ASCII domain name characters to
+	// prevent inadvertent or malicious injection of special shell characters
+	// into the scripts environment.
+	var targetRegexp = regexp.MustCompile("^[a-zA-Z0-9-.]{4,253}$")
 
 	if pattern != "" {
 		patternRegexp, err = regexp.Compile(pattern)
@@ -124,9 +124,7 @@ func scriptFilter(scripts []*Script, name, pattern, target string) (filteredScri
 		}
 	}
 
-	targetRegexp, err = regexp.Compile(targetPattern)
-	if target != "" && ! targetRegexp.MatchString(target) {
-		log.Infof("The query parameter 'target' is not valid: %s", target)
+	if target != "" && !targetRegexp.MatchString(target) {
 		return
 	}
 

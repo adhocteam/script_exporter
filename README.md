@@ -22,8 +22,8 @@ scripts:
     script: sleep 5
     timeout: 1
 
-  - name: target
-    script: example.sh ${TARGET}
+  - name: ping-target
+    script: ping -c 1 ${TARGET}
     timeout: 4
 ```
 
@@ -78,7 +78,7 @@ parameter is made available to the script's environment with the name `TARGET`.
 This, for example, allows you to leverage Prometheus targets, if you happen to
 need the script to operate on an arbitrary number of remote hosts/services.
 
-`$ curl http://localhost:9172/probe?name=example&target=service.example.com`
+`$ curl http://localhost:9172/probe?name=ping-target&target=service.example.com`
 
 ## Design
 
