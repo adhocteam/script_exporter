@@ -33,8 +33,8 @@ type Config struct {
 type Script struct {
 	Name    string `yaml:"name"`
 	Content string `yaml:"script"`
-	Target  string `yaml:"target"`
 	Timeout int64  `yaml:"timeout"`
+	Target  string
 }
 
 type Measurement struct {
@@ -110,6 +110,11 @@ func scriptFilter(scripts []*Script, name, pattern, target string) (filteredScri
 	}
 
 	var patternRegexp *regexp.Regexp
+	var targetRegexp *regexp.Regexp
+
+	// A *very* basic regex pattern to be sure that the target looks minimally
+	// like a domain name and contains no special shell characters.
+	var targetPattern string = "^[a-zA-Z0-9-.]{2,253}$"
 
 	if pattern != "" {
 		patternRegexp, err = regexp.Compile(pattern)
@@ -117,6 +122,12 @@ func scriptFilter(scripts []*Script, name, pattern, target string) (filteredScri
 		if err != nil {
 			return
 		}
+	}
+
+	targetRegexp, err = regexp.Compile(targetPattern)
+	if target != "" && ! targetRegexp.MatchString(target) {
+		log.Infof("The query parameter 'target' is not valid: %s", target)
+		return
 	}
 
 	for _, script := range scripts {
