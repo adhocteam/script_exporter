@@ -21,6 +21,10 @@ scripts:
   - name: timeout
     script: sleep 5
     timeout: 1
+
+  - name: ping-target
+    script: ping -c 1 ${TARGET}
+    timeout: 4
 ```
 
 ## Running
@@ -56,7 +60,7 @@ script_duration_seconds{script="failure"} 2.008337
 script_success{script="failure"} 0
 ```
 
-A regular expression may be specified withthe `pattern` paremeter:
+A regular expression may be specified with the `pattern` paremeter:
 
 `$ curl http://localhost:9172/probe?pattern=.*`
 
@@ -68,6 +72,13 @@ script_success{script="failure"} 0
 script_duration_seconds{script="success"} 5.013670
 script_success{script="success"} 1
 ```
+
+If a /probe query parameter named `target` is present, then the value of this
+parameter is made available to the script's environment with the name `TARGET`.
+This, for example, allows you to leverage Prometheus targets, if you happen to
+need the script to operate on an arbitrary number of remote hosts/services.
+
+`$ curl http://localhost:9172/probe?name=ping-target&target=service.example.com`
 
 ## Design
 

@@ -24,6 +24,10 @@ var (
 	listenAddress = flag.String("web.listen-address", ":9172", "The address to listen on for HTTP requests.")
 	metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
 	shell         = flag.String("config.shell", "/bin/sh", "Shell to execute script")
+	// A regex pattern that only matches valid ASCII domain name characters to
+	// prevent inadvertent or malicious injection of special shell characters
+	// into the scripts environment.
+	targetRegexp = regexp.MustCompile("^[a-zA-Z0-9-.]{4,253}$")
 )
 
 type Config struct {
@@ -34,6 +38,7 @@ type Script struct {
 	Name    string `yaml:"name"`
 	Content string `yaml:"script"`
 	Timeout int64  `yaml:"timeout"`
+	Target  string
 }
 
 type Measurement struct {
@@ -47,6 +52,7 @@ func runScript(script *Script) error {
 	defer cancel()
 
 	bashCmd := exec.CommandContext(ctx, *shell)
+	bashCmd.Env = append(os.Environ(), fmt.Sprintf("TARGET=%s", script.Target))
 
 	bashIn, err := bashCmd.StdinPipe()
 
@@ -101,7 +107,7 @@ func runScripts(scripts []*Script) []*Measurement {
 	return measurements
 }
 
-func scriptFilter(scripts []*Script, name, pattern string) (filteredScripts []*Script, err error) {
+func scriptFilter(scripts []*Script, name, pattern, target string) (filteredScripts []*Script, err error) {
 	if name == "" && pattern == "" {
 		err = errors.New("`name` or `pattern` required")
 		return
@@ -117,7 +123,12 @@ func scriptFilter(scripts []*Script, name, pattern string) (filteredScripts []*S
 		}
 	}
 
+	if target != "" && !targetRegexp.MatchString(target) {
+		return
+	}
+
 	for _, script := range scripts {
+		script.Target = target
 		if script.Name == name || (pattern != "" && patternRegexp.MatchString(script.Name)) {
 			filteredScripts = append(filteredScripts, script)
 		}
@@ -130,8 +141,9 @@ func scriptRunHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 	params := r.URL.Query()
 	name := params.Get("name")
 	pattern := params.Get("pattern")
+	target := params.Get("target")
 
-	scripts, err := scriptFilter(config.Scripts, name, pattern)
+	scripts, err := scriptFilter(config.Scripts, name, pattern, target)
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)
