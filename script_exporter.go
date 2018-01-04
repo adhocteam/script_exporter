@@ -24,6 +24,10 @@ var (
 	listenAddress = flag.String("web.listen-address", ":9172", "The address to listen on for HTTP requests.")
 	metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
 	shell         = flag.String("config.shell", "/bin/sh", "Shell to execute script")
+	// A regex pattern that only matches valid ASCII domain name characters to
+	// prevent inadvertent or malicious injection of special shell characters
+	// into the scripts environment.
+	targetRegexp = regexp.MustCompile("^[a-zA-Z0-9-.]{4,253}$")
 )
 
 type Config struct {
@@ -110,11 +114,6 @@ func scriptFilter(scripts []*Script, name, pattern, target string) (filteredScri
 	}
 
 	var patternRegexp *regexp.Regexp
-
-	// A regex pattern that only matches valid ASCII domain name characters to
-	// prevent inadvertent or malicious injection of special shell characters
-	// into the scripts environment.
-	var targetRegexp = regexp.MustCompile("^[a-zA-Z0-9-.]{4,253}$")
 
 	if pattern != "" {
 		patternRegexp, err = regexp.Compile(pattern)
