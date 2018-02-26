@@ -21,6 +21,9 @@ scripts:
   - name: timeout
     script: sleep 5
     timeout: 1
+    
+  - name: scriptFile
+      file: /etc/script-exporter/runThis.sh
 ```
 
 ## Running

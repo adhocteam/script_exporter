@@ -16,6 +16,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
+	"bytes"
 )
 
 var (
@@ -34,6 +35,7 @@ type Script struct {
 	Name    string `yaml:"name"`
 	Content string `yaml:"script"`
 	Timeout int64  `yaml:"timeout"`
+	File 	string	`yaml:"file"`
 }
 
 type Measurement struct {
@@ -47,8 +49,15 @@ func runScript(script *Script) error {
 	defer cancel()
 
 	bashCmd := exec.CommandContext(ctx, *shell)
+	if script.File != "" {
+		bashCmd.Args = append(bashCmd.Args, script.File)
+	}
 
 	bashIn, err := bashCmd.StdinPipe()
+	// Stdout buffer
+	cmdOutput := &bytes.Buffer{}
+	// Attach buffer to command
+	bashCmd.Stdout = cmdOutput
 
 	if err != nil {
 		return err
@@ -64,7 +73,16 @@ func runScript(script *Script) error {
 
 	bashIn.Close()
 
-	return bashCmd.Wait()
+	err = bashCmd.Wait()
+
+	log.Debugf("output of script: %s", cmdOutput.Bytes())
+
+	if err != nil {
+		return err
+	} else {
+		return nil
+	}
+
 }
 
 func runScripts(scripts []*Script) []*Measurement {
