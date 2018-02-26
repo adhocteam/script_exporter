@@ -33,10 +33,10 @@ You can run via docker with:
 ```
 docker run -d -p 9172:9172 --name script-exporter \
   -v `pwd`/config.yml:/etc/script-exporter/config.yml:ro \
-  -config.file=/etc/script-exporter/config.yml
-  -web.listen-address=":9172" \
-  -web.telemetry-path="/metrics" \
-  -config.shell="/bin/sh" \
+  -e config.file=/etc/script-exporter/config.yml \
+  -e web.listen-address=":9172" \
+  -e web.telemetry-path="/metrics" \
+  -e config.shell="/bin/sh" \
   adhocteam/script-exporter:master
 ```
 
