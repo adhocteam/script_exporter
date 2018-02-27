@@ -75,7 +75,7 @@ func runScript(script *Script) error {
 
 	err = bashCmd.Wait()
 
-	log.Debugf("output of script: %s", cmdOutput.Bytes())
+	log.Infof("output of script: %s", cmdOutput.Bytes())
 
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func runScripts(scripts []*Script) []*Measurement {
 			duration := time.Since(start).Seconds()
 
 			if err == nil {
-				log.Debugf("OK: %s (after %fs).", script.Name, duration)
+				log.Infof("OK: %s (after %fs).", script.Name, duration)
 				success = 1
 			} else {
 				log.Infof("ERROR: %s: %s (failed after %fs).", script.Name, err, duration)
