@@ -56,7 +56,7 @@ script_duration_seconds{script="failure"} 2.008337
 script_success{script="failure"} 0
 ```
 
-A regular expression may be specified withthe `pattern` paremeter:
+A regular expression may be specified with the `pattern` paremeter:
 
 `$ curl http://localhost:9172/probe?pattern=.*`
 
