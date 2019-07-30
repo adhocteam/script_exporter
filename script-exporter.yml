@@ -8,3 +8,6 @@ scripts:
   - name: 'timeout'
     script: sleep 5
     timeout: 1
+
+  - name: 'script'
+      file: /etc/script-exporter/runThis.sh

@@ -6,9 +6,10 @@ import (
 
 var config = &Config{
 	Scripts: []*Script{
-		{"success", "exit 0", 1},
-		{"failure", "exit 1", 1},
-		{"timeout", "sleep 5", 2},
+		{"success", "exit 0", 1, ""},
+		{"failure", "exit 1", 1, ""},
+		{"timeout", "sleep 5", 2, ""},
+		{"script", "", 1, "./runThis.sh"},
 	},
 }
 
@@ -22,6 +23,7 @@ func TestRunScripts(t *testing.T) {
 		"success": {1, 0},
 		"failure": {0, 0},
 		"timeout": {0, 2},
+		"script": {1, 0},
 	}
 
 	for _, measurement := range measurements {
@@ -77,8 +79,8 @@ func TestScriptFilter(t *testing.T) {
 			t.Errorf("Unexpected: %s", err.Error())
 		}
 
-		if len(scripts) != 3 {
-			t.Fatalf("Expected 3 scripts, received %d", len(scripts))
+		if len(scripts) != 4 {
+			t.Fatalf("Expected 4 scripts, received %d", len(scripts))
 		}
 
 		for i, script := range config.Scripts {

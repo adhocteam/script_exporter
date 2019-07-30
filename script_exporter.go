@@ -14,8 +14,10 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
+	"bytes"
 )
 
 var (
@@ -34,6 +36,7 @@ type Script struct {
 	Name    string `yaml:"name"`
 	Content string `yaml:"script"`
 	Timeout int64  `yaml:"timeout"`
+	File 	string	`yaml:"file"`
 }
 
 type Measurement struct {
@@ -47,8 +50,15 @@ func runScript(script *Script) error {
 	defer cancel()
 
 	bashCmd := exec.CommandContext(ctx, *shell)
+	if script.File != "" {
+		bashCmd.Args = append(bashCmd.Args, script.File)
+	}
 
 	bashIn, err := bashCmd.StdinPipe()
+	// Stdout buffer
+	cmdOutput := &bytes.Buffer{}
+	// Attach buffer to command
+	bashCmd.Stdout = cmdOutput
 
 	if err != nil {
 		return err
@@ -64,7 +74,16 @@ func runScript(script *Script) error {
 
 	bashIn.Close()
 
-	return bashCmd.Wait()
+	err = bashCmd.Wait()
+
+	log.Infof("output of script: %s", cmdOutput.Bytes())
+
+	if err != nil {
+		return err
+	} else {
+		return nil
+	}
+
 }
 
 func runScripts(scripts []*Script) []*Measurement {
@@ -80,7 +99,7 @@ func runScripts(scripts []*Script) []*Measurement {
 			duration := time.Since(start).Seconds()
 
 			if err == nil {
-				log.Debugf("OK: %s (after %fs).", script.Name, duration)
+				log.Infof("OK: %s (after %fs).", script.Name, duration)
 				success = 1
 			} else {
 				log.Infof("ERROR: %s: %s (failed after %fs).", script.Name, err, duration)
@@ -182,7 +201,7 @@ func main() {
 		}
 	}
 
-	http.Handle("/metrics", prometheus.Handler())
+	http.Handle("/metrics", promhttp.Handler())
 
 	http.HandleFunc("/probe", func(w http.ResponseWriter, r *http.Request) {
 		scriptRunHandler(w, r, &config)
