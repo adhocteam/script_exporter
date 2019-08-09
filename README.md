@@ -34,8 +34,7 @@ docker run -d -p 9172:9172 --name script-exporter \
   -config.file=/etc/script-exporter/config.yml \
   -web.listen-address=":9172" \
   -web.telemetry-path="/metrics" \
-  -config.shell="/bin/sh" \
-  
+  -config.shell="/bin/sh"
 ```
 
 You'll need to customize the docker image or use the binary on the host system
