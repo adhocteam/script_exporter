@@ -11,8 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GO    := GO111MODULE=on go
-PROMU := $(GOPATH)/bin/promu
+GO     := GO111MODULE=on go
+GOPATH := $(shell go env GOPATH)
+PROMU  := $(GOPATH)/bin/promu
 
 PREFIX            ?= $(shell pwd)
 BIN_DIR           ?= $(shell pwd)
