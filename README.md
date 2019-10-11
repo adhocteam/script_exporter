@@ -6,7 +6,7 @@ Prometheus exporter written to execute and collect metrics on script exit status
 and duration. Designed to allow the execution of probes where support for the
 probe type wasn't easily configured with the Prometheus blackbox exporter.
 
-Minimum supported Go Version: 1.7.3
+Minimum supported Go Version: 1.13.1
 
 ## Sample Configuration
 
@@ -29,7 +29,7 @@ You can run via docker with:
 
 ```
 docker run -d -p 9172:9172 --name script-exporter \
-  -v `pwd`/config.yml:/etc/script-exporter/config.yml:ro \
+  -v `pwd`/script-exporter.yml:/etc/script-exporter/config.yml:ro \
   adhocteam/script-exporter:master \
   -config.file=/etc/script-exporter/config.yml \
   -web.listen-address=":9172" \

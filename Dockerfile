@@ -1,22 +1,18 @@
-FROM golang:1.12.6-alpine AS build-env
-MAINTAINER  James Kassemi (Ad Hoc, LLC) <james.kassemi@adhocteam.us>
+FROM golang:1.13.1-alpine AS build-env
 
-RUN apk add --update git
-RUN apk add --update gcc
-RUN apk add --update libc-dev
+RUN apk add --update git gcc libc-dev
 RUN go get -u github.com/prometheus/promu
 
 RUN mkdir script_exporter
-COPY .promu.yml /go/script_exporter/
-COPY script_exporter.go /go/script_exporter/
-COPY go.mod /go/script_exporter/
-COPY go.sum /go/script_exporter/
+COPY .promu.yml script_exporter.go go.mod go.sum /go/script_exporter/
 
 WORKDIR /go/script_exporter
 RUN promu build
 
 FROM alpine:3.8
-COPY --from=build-env /go/script_exporter/script_exporter /bin/
+LABEL upstream="https://github.com/adhocteam/script_exporter"
+LABEL maintainer="james.kassemi@adhocteam.us"
+COPY --from=build-env /go/script_exporter/script_exporter /bin/script-exporter
 COPY script-exporter.yml /etc/script-exporter/config.yml
 
 EXPOSE      9172
