@@ -1,0 +1,15 @@
+---
+version: 2
+
+jobs:
+  test:
+    -image: circleci/golang:1.13
+  steps:
+    - checkout
+    - run: make test
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
