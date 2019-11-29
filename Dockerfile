@@ -12,6 +12,7 @@ RUN promu build
 FROM alpine:3.8
 LABEL upstream="https://github.com/adhocteam/script_exporter"
 LABEL maintainer="james.kassemi@adhocteam.us"
+RUN apk add --no-cache bash
 COPY --from=build-env /go/script_exporter/script_exporter /bin/script-exporter
 COPY script-exporter.yml /etc/script-exporter/config.yml
 
