@@ -177,10 +177,13 @@ func main() {
 
 	log.Infof("Loaded %d script configurations", len(config.Scripts))
 
+	var probePathLinks string
 	for _, script := range config.Scripts {
 		if script.Timeout == 0 {
 			script.Timeout = 15
 		}
+		probePathLinks +=
+			`<li><a href="/probe?name=`+script.Name+`">`+script.Name+"</a></li>\n"
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -194,6 +197,11 @@ func main() {
 			<head><title>Script Exporter</title></head>
 			<body>
 			<h1>Script Exporter</h1>
+		    <h2>Probes</h2>
+		    <ul>
+		    ` + probePathLinks + `
+			</ul>    
+		    <h2>Metrics</h2>
 			<p><a href="` + *metricsPath + `">Metrics</a></p>
 			</body>
 			</html>`))
