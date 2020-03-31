@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -69,12 +70,16 @@ func runScript(script *Script) error {
 }
 
 func runScripts(scripts []*Script) []*Measurement {
+	var wg sync.WaitGroup
+
 	measurements := make([]*Measurement, 0)
 
 	ch := make(chan *Measurement)
 
 	for _, script := range scripts {
+		wg.Add(1)
 		go func(script *Script) {
+			defer wg.Done()
 			start := time.Now()
 			success := 0
 			err := runScript(script)
@@ -94,6 +99,8 @@ func runScripts(scripts []*Script) []*Measurement {
 			}
 		}(script)
 	}
+
+	wg.Wait()
 
 	for i := 0; i < len(scripts); i++ {
 		measurements = append(measurements, <-ch)
@@ -183,7 +190,7 @@ func main() {
 			script.Timeout = 15
 		}
 		probePathLinks +=
-			`<li><a href="/probe?name=`+script.Name+`">`+script.Name+"</a></li>\n"
+			`<li><a href="/probe?name=` + script.Name + `">` + script.Name + "</a></li>\n"
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
