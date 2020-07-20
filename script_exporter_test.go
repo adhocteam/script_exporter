@@ -18,10 +18,11 @@ func TestRunScripts(t *testing.T) {
 	expectedResults := map[string]struct {
 		success     int
 		minDuration float64
+		exitCode	int
 	}{
-		"success": {1, 0},
-		"failure": {0, 0},
-		"timeout": {0, 2},
+		"success": {1, 0, 0},
+		"failure": {0, 0, 1},
+		"timeout": {0, 2, -1},
 	}
 
 	for _, measurement := range measurements {
@@ -33,6 +34,10 @@ func TestRunScripts(t *testing.T) {
 
 		if measurement.Duration < expectedResult.minDuration {
 			t.Errorf("Expected duration %f < %f: %s", measurement.Duration, expectedResult.minDuration, measurement.Script.Name)
+		}
+
+		if measurement.ExitCode != expectedResult.exitCode {
+			t.Errorf("Expected exit code %d != %d: %s", measurement.ExitCode, expectedResult.exitCode, measurement.Script.Name)
 		}
 	}
 }
