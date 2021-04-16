@@ -1,4 +1,4 @@
-module github.com/adhocteam/script_exporter
+module github.com/useful-devops-tools/script_exporter
 
 go 1.14
 
